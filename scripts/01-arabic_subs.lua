@@ -1,4 +1,7 @@
-local function arabic_shit()
+local arabic_shit
+local english_shit
+
+arabic_shit = function()
     -- Set subtitle style for Arabic subtitles
     mp.set_property("sub-font", "Amiri")                -- Set subtitle font to Amiri
     mp.set_property("sub-font-size", "64")              -- Set subtitle font size to 48
@@ -8,7 +11,7 @@ local function arabic_shit()
     mp.osd_message("Good job!!", 2) -- Show message for 2 seconds
 end
 
-local function english_shit()
+english_shit = function()
     -- Set subtitle style for English subtitles
     mp.set_property("sub-font", "Helvetica Bold")       -- Set subtitle font to Helvetica Bold
     mp.set_property("sub-font-size", "36")              -- Set subtitle font size to 36
@@ -41,7 +44,7 @@ local function set_sub_style()
             english_shit()
             goto continue
         end
-        mp.osd_message("Unsupported " .. (t.lang or "unknown") .. " t.id: " .. t.id .. ", t.type: " .. t.type, 2)
+        mp.msg.debug("Skipped subtitle style for lang=" .. (t.lang or "unknown") .. " t.id=" .. t.id)
         ::continue::
 
     end
