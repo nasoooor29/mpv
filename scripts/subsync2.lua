@@ -243,6 +243,8 @@ local function sync_subtitles()
 
         local difference_ms = external_ms - embedded_ms
         local offset = -difference_ms / 1000
+        -- make it to the 100th for example 3453 -> 3400 -> 3.4
+        offset = math.floor(offset * 10) / 10
 
         mp.set_property_number("sub-delay", offset)
 
