@@ -265,3 +265,12 @@ mp.add_forced_key_binding(
     "auto-subtitle-sync",
     sync_subtitles
 )
+
+mp.add_forced_key_binding(
+    "X",
+    "delay0",
+    function()
+        mp.set_property_number("sub-delay", 0)
+        mp.osd_message("Subtitle delay reset to 0 seconds", 2)
+    end
+)
