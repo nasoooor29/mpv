@@ -148,7 +148,7 @@ local function delete_file(path)
     end
 end
 
-local function sync_subtitles()
+local function sync_subtitles2()
     local video_path = get_absolute_video_path()
 
     if not video_path then
@@ -244,7 +244,7 @@ local function sync_subtitles()
         local difference_ms = external_ms - embedded_ms
         local offset = -difference_ms / 1000
         -- make it to the 100th for example 3453 -> 3400 -> 3.4
-        offset = math.floor(offset * 10) / 10
+        offset = math.floor(offset * 1000) / 1000
 
         mp.set_property_number("sub-delay", offset)
 
@@ -263,7 +263,7 @@ end
 mp.add_forced_key_binding(
     "Ctrl+e",
     "auto-subtitle-sync",
-    sync_subtitles
+    sync_subtitles2
 )
 
 mp.add_forced_key_binding(
