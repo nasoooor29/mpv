@@ -1,57 +1,132 @@
-local arabic_shit
-local english_shit
+local mp = require("mp")
 
-arabic_shit = function()
-    -- Set subtitle style for Arabic subtitles
-    mp.set_property("sub-font", "Amiri")                -- Set subtitle font to Amiri
-    mp.set_property("sub-font-size", "64")              -- Set subtitle font size to 48
-    mp.set_property("sub-color", "#fbff27ff")         -- Set subtitle color to purple
-    mp.set_property("sub-border-size", "2")             -- Set subtitle border size to 2
-    mp.set_property("sub-shadow-offset", "1")           -- Set subtitle shadow offset to 1
-    mp.osd_message("Good job!!", 2) -- Show message for 2 seconds
+local function arabic_shit()
+    mp.set_property("sub-font", "Amiri")
+    mp.set_property_native("sub-font-size", 64)
+    mp.set_property("sub-color", "#fbff27ff")
+    mp.set_property_native("sub-border-size", 2)
+    mp.set_property_native("sub-shadow-offset", 1)
+
+    mp.osd_message("Arabic subtitles activated.", 2)
+    mp.msg.info("Arabic subtitle style applied")
 end
 
-english_shit = function()
-    -- Set subtitle style for English subtitles
-    mp.set_property("sub-font", "Helvetica Bold")       -- Set subtitle font to Helvetica Bold
-    mp.set_property("sub-font-size", "36")              -- Set subtitle font size to 36
-    mp.set_property("sub-color", "#ffffffff")           -- Set subtitle color to white
-    mp.set_property("sub-border-size", "1")             -- Set subtitle border size to 1
-    mp.set_property("sub-shadow-offset", "0")           -- Set subtitle shadow offset to 0
-    mp.osd_message("English subtitles activated.", 2)   -- Show message for 2 seconds
+local function english_shit()
+    mp.set_property("sub-font", "Helvetica Bold")
+    mp.set_property_native("sub-font-size", 36)
+    mp.set_property("sub-color", "#ffffffff")
+    mp.set_property_native("sub-border-size", 1)
+    mp.set_property_native("sub-shadow-offset", 0)
+
+    mp.osd_message("English subtitles activated.", 2)
+    mp.msg.info("English subtitle style applied")
 end
 
--- Define a function to check subtitle track and apply style
 local function set_sub_style()
-    mp.set_property("sub-ass-override", "force")        -- so it work on ass subtitles and mkv etc
-    local sid = mp.get_property_number("sid")           -- Get current subtitle track ID
-    if not sid then return end                          -- If no subtitle track, exit function
+    mp.msg.info("set_sub_style called")
 
-    local tracks = mp.get_property_native("track-list") -- Get list of all tracks
-    for _, t in ipairs(tracks) do                       -- Iterate over each track
-        if t.id ~= sid or t.type ~= "sub" then          -- Skip if not the current subtitle track
-            goto continue
-        end
+    -- Strip subtitle-provided styling and force mpv styling
+    mp.set_property("sub-ass-override", "strip")
 
-        -- if t.lang ~= "ar" and t.lang ~= "ara" then       -- Skip if subtitle language is not Arabic
-        --     goto continue
-        -- end
-        if t.lang == "ar" or t.lang == "ara" then
-            arabic_shit()
-            goto continue
-        end
-        if t.lang == "en" or t.lang == "eng" then
-            english_shit()
-            goto continue
-        end
-        mp.msg.debug("Skipped subtitle style for lang=" .. (t.lang or "unknown") .. " t.id=" .. t.id)
-        ::continue::
+    local sid = mp.get_property_number("sid")
 
+    if not sid then
+        mp.msg.info("No subtitle selected")
+        return
     end
+
+    local tracks = mp.get_property_native("track-list")
+
+    if not tracks then
+        mp.msg.warn("Could not get track-list")
+        return
+    end
+
+    for _, t in ipairs(tracks) do
+        if t.type == "sub" and t.id == sid then
+            local lang = (t.lang or ""):lower()
+            local title = (t.title or ""):lower()
+            local filename = (t["external-filename"] or ""):lower()
+
+            mp.msg.info(
+                "Selected subtitle:"
+                .. " id=" .. tostring(t.id)
+                .. " lang=" .. tostring(lang)
+                .. " title=" .. tostring(title)
+                .. " file=" .. tostring(filename)
+            )
+
+            -- Arabic detection
+            if
+                lang == "ar"
+                or lang == "ara"
+                or lang == "ar-sa"
+                or lang == "arabic"
+                or title:match("arabic")
+                or title:match("ara")
+                or filename:match("%.ara%.")
+                or filename:match("%.ar%.")
+                or filename:match("arabic")
+            then
+                arabic_shit()
+                return
+            end
+
+            -- English detection
+            if
+                lang == "en"
+                or lang == "eng"
+                or lang == "english"
+                or title:match("english")
+                or title:match("eng")
+                or filename:match("%.eng%.")
+                or filename:match("%.en%.")
+                or filename:match("english")
+            then
+                english_shit()
+                return
+            end
+
+            mp.osd_message(
+                "Unknown subtitle language: "
+                .. (lang ~= "" and lang or "none"),
+                3
+            )
+
+            mp.msg.warn(
+                "Could not detect subtitle language."
+                .. " lang=" .. tostring(lang)
+                .. " title=" .. tostring(title)
+                .. " file=" .. tostring(filename)
+            )
+
+            return
+        end
+    end
+
+    mp.msg.warn("Selected subtitle track not found in track-list")
 end
 
+-- Debug message so you KNOW the script actually loaded
+mp.register_event("file-loaded", function()
+    mp.osd_message("Subtitle style script loaded", 2)
+    mp.msg.info("Subtitle style script loaded")
 
+    -- Small delay because external subtitles may load slightly later
+    mp.add_timeout(0.3, set_sub_style)
+end)
 
-mp.observe_property("sid", "number", set_sub_style)      -- when subtitle track changes try to set the theme
-mp.register_event("file-loaded", set_sub_style)          -- when a new file is loaded try to set the theme
-mp.register_script_message("fullyy-sub-loaded",set_sub_style)
+-- When you switch subtitle tracks
+mp.observe_property("sid", "number", function()
+    mp.add_timeout(0.1, set_sub_style)
+end)
+
+-- When new tracks/subtitles are added
+mp.register_event("tracks-changed", function()
+    mp.add_timeout(0.1, set_sub_style)
+end)
+
+-- Your existing custom hook
+mp.register_script_message("fullyy-sub-loaded", function()
+    mp.add_timeout(0.1, set_sub_style)
+end)
