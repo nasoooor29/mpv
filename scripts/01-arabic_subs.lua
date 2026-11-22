@@ -26,7 +26,7 @@ local function set_sub_style()
     mp.msg.info("set_sub_style called")
 
     -- Strip subtitle-provided styling and force mpv styling
-    mp.set_property("sub-ass-override", "strip")
+    mp.set_property("sub-ass-override", "no")
 
     local sid = mp.get_property_number("sid")
 
@@ -130,3 +130,20 @@ end)
 mp.register_script_message("fullyy-sub-loaded", function()
     mp.add_timeout(0.1, set_sub_style)
 end)
+
+local function reset_sub_style()
+    -- Restore original ASS/SSA subtitle styling
+    mp.set_property("sub-ass-override", "no")
+
+    -- Reset custom subtitle properties to mpv defaults
+    mp.command("change-list sub-font clr")
+    mp.command("change-list sub-font-size clr")
+    mp.command("change-list sub-color clr")
+    mp.command("change-list sub-border-size clr")
+    mp.command("change-list sub-shadow-offset clr")
+
+    mp.osd_message("Original subtitle styling restored", 2)
+end
+
+mp.register_script_message("reset-sub-style", reset_sub_style)
+mp.add_key_binding("Ctrl+Shift+r", "reset-sub-style", reset_sub_style)
